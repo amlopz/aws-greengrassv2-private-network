@@ -28,7 +28,7 @@ class GreengrassPrivateNetworkStack(Stack):
                     name="Public",
                 ),
                 ec2.SubnetConfiguration(
-                    subnet_type=ec2.SubnetType.PRIVATE_WITH_NAT,
+                    subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
                     name="Private with NAT",
                 ),
             ],
@@ -37,8 +37,8 @@ class GreengrassPrivateNetworkStack(Stack):
 
         gg_vpc.add_flow_log("GreengrassPrivateVpcFlowLog")
 
-        amzn_linux = ec2.MachineImage.latest_amazon_linux(
-            generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2023,
+        amzn_linux = ec2.MachineImage.latest_amazon_linux2023(
+            #generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2023,
             edition=ec2.AmazonLinuxEdition.STANDARD,
             cpu_type=ec2.AmazonLinuxCpuType.X86_64,
         )
@@ -102,7 +102,7 @@ class GreengrassPrivateNetworkStack(Stack):
             ],
         )
 
-        #gives you scoping for security groups, pulling the cidr range of vpc
+        # gives you scoping for security groups, pulling the cidr range of vpc
         peer = ec2.Peer.ipv4(gg_vpc.vpc_cidr_block)
 
         greengrass_sg = ec2.SecurityGroup(
@@ -128,7 +128,7 @@ class GreengrassPrivateNetworkStack(Stack):
             ),
             machine_image=amzn_linux,
             vpc_subnets=ec2.SubnetSelection(
-                subnet_type=ec2.SubnetType.PRIVATE_WITH_NAT,
+                subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
             ),
             role=ec2_role,
             security_group=greengrass_sg,
@@ -147,11 +147,15 @@ class GreengrassPrivateNetworkStack(Stack):
             peer, ec2.Port.tcp(8888), "Allow incoming MQTT from other devices"
         )
 
-        #change userdata
+        ubuntu = ec2.GenericLinuxImage({
+            "us-east-1": "ami-053b0d53c279acc90"
+        })
+
+        # change userdata
         with open("./user_data/userdata_proxy.sh") as f:
             USER_DATA_PROXY = f.read()
 
-        #change instance type from Burstable4, was originally for ARM
+        # change instance type from Burstable4, was originally for ARM
         proxy_instance = ec2.Instance(
             self,
             "TinyProxy Instance",
@@ -161,7 +165,7 @@ class GreengrassPrivateNetworkStack(Stack):
             ),
             machine_image=ubuntu,
             vpc_subnets=ec2.SubnetSelection(
-                subnet_type=ec2.SubnetType.Public,
+                subnet_type=ec2.SubnetType.PUBLIC,
             ),
             role=ec2_role,
             security_group=proxy_sg,
@@ -278,7 +282,7 @@ class GreengrassPrivateNetworkStack(Stack):
             ),
             record_name="*." + s3_endpoint_uri,
         )
-        #added the Zone and A Record for the Data IoT endpoint
+        # added the Zone and A Record for the Data IoT endpoint
         dataIoT_endpoint_uri = "data.iot.{}.amazonaws.com".format(Stack.of(self).region)
         iotcore_hosted_zone = route53.HostedZone(
             self,
@@ -297,17 +301,15 @@ class GreengrassPrivateNetworkStack(Stack):
             record_name=dataIoT_endpoint_uri,
         )
 
-
-
         iot_client = boto3.client("iot", Stack.of(self).region)
         iot_endpoint = iot_client.describe_endpoint(endpointType="iot:Data-ATS")
         iot_endpoint_address = iot_endpoint["endpointAddress"]
 
-        #IoT Core endpoint 
+        # IoT Core endpoint
         hosted_zone = route53.HostedZone(
             self,
             "IotCoreHostedZone",
-            zone_name=iot_endpoint["iot_endpoint_address"],
+            zone_name=iot_endpoint_address,
             vpcs=[gg_vpc],
         )
 
@@ -321,14 +323,14 @@ class GreengrassPrivateNetworkStack(Stack):
             record_name=iot_endpoint_address,
         )
 
- 
-        #Greengrass-ats Hosted Zone
+        # Greengrass-ats Hosted Zone
         hosted_zone = route53.HostedZone(
             self,
             "GreengrassATSHostedZone",
             zone_name="greengrass-ats.iot.{}.amazonaws.com".format(
                 Stack.of(self).region,
-            vpcs=[gg_vpc],
+                vpcs=[gg_vpc],
+            )
         )
 
         route53.ARecord(
@@ -361,4 +363,3 @@ class GreengrassPrivateNetworkStack(Stack):
         )
 
         cdk.CfnOutput(self, "Greengrass Vpc CIDR Block:", value=gg_vpc.vpc_cidr_block)
-
