@@ -174,7 +174,7 @@ class GreengrassPrivateNetworkStack(Stack):
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
             ),
-            role=ec2_role,
+            role=ec2_role_for_gg,
             security_group=greengrass_sg,
             user_data=ec2.UserData.custom(USER_DATA),
             detailed_monitoring=True,
@@ -224,7 +224,7 @@ class GreengrassPrivateNetworkStack(Stack):
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PUBLIC,
             ),
-            role=ec2_role,
+            role=ec2_role_for_proxy,
             security_group=proxy_sg,
             user_data=ec2.UserData.custom(USER_DATA_PROXY),
             detailed_monitoring=True,
