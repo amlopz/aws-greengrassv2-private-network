@@ -43,27 +43,39 @@ class GreengrassPrivateNetworkStack(Stack):
             cpu_type=ec2.AmazonLinuxCpuType.X86_64,
         )
 
-        ec2_role = iam.Role(
-            self, "InstanceSSM", assumed_by=iam.ServicePrincipal("ec2.amazonaws.com")
+        ec2_role_for_gg = iam.Role(
+            self, "GreengrassPrivateRole", assumed_by=iam.ServicePrincipal("ec2.amazonaws.com")
         )
 
-        ec2_role.add_managed_policy(
+        ec2_role_for_gg.add_managed_policy(
             iam.ManagedPolicy.from_aws_managed_policy_name(
                 "AmazonSSMManagedInstanceCore"
             )
         )
+
+        ec2_role_for_gg.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name(
+                "AmazonS3ReadOnlyAccess"
+            )
+        )
+
+        ec2_role_for_gg.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name(
+                "AWSGreengrassReadOnlyAccess"
+            )
+        )
+
         iam.Policy(
             self,
             "AllowsGreengrassToRequiredArtifacts",
-            roles=[ec2_role],
+            roles=[ec2_role_for_gg],
             policy_name="AllowsGreengrassToRequiredArtifacts",
             statements=[
                 iam.PolicyStatement(
                     actions=[
                         "s3:Get*",
                         "s3:List*",
-                        "s3-object-lambda:Get*",
-                        "s3-object-lambda:List*",
+                        "s3:Put*"
                     ],
                     effect=iam.Effect.ALLOW,
                     resources=[
@@ -81,8 +93,31 @@ class GreengrassPrivateNetworkStack(Stack):
 
         iam.Policy(
             self,
+            "AllowsCreationOfComponentsAndDeployments",
+            roles=[ec2_role_for_gg],
+            policy_name="AllowsCreationOfComponentsAndDeployments",
+            statements=[
+                iam.PolicyStatement(
+                    actions=[
+                        "greengrass:DescribeComponent",
+                        "greengrass:GetComponent",
+                        "greengrass:GetComponentVersionArtifact",
+                        "greengrass:GetCoreDevice",
+                        "greengrass:CreateComponentVersion",
+                        "greengrass:CreateDeployment",
+                    ],
+                    effect=iam.Effect.ALLOW,
+                    resources=[
+                        "*"
+                    ],
+                )
+            ],
+        )
+
+        iam.Policy(
+            self,
             "AllowGreengrassDeviceLogging",
-            roles=[ec2_role],
+            roles=[ec2_role_for_gg],
             policy_name="AllowGreengrassDeviceLogging",
             statements=[
                 iam.PolicyStatement(
@@ -115,6 +150,15 @@ class GreengrassPrivateNetworkStack(Stack):
         greengrass_sg.add_ingress_rule(
             peer, ec2.Port.tcp(8883), "Allow incoming MQTT from other devices"
         )
+        greengrass_sg.add_ingress_rule(
+            peer, ec2.Port.tcp(8443), "Allow incoming communication from IoT Core"
+        )
+        greengrass_sg.add_ingress_rule(
+            peer, ec2.Port.tcp(8888), "Allow incoming communication from Proxy server"
+        )
+        greengrass_sg.add_ingress_rule(
+            peer, ec2.Port.tcp(443), "Allow traffic from endpoints"
+        )
 
         with open("./user_data/userdata.sh") as f:
             USER_DATA = f.read()
@@ -136,6 +180,16 @@ class GreengrassPrivateNetworkStack(Stack):
             detailed_monitoring=True,
         )
 
+        ec2_role_for_proxy = iam.Role(
+            self, "ProxyRole", assumed_by=iam.ServicePrincipal("ec2.amazonaws.com")
+        )
+
+        ec2_role_for_proxy.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name(
+                "AmazonSSMManagedInstanceCore"
+            )
+        )
+
         proxy_sg = ec2.SecurityGroup(
             self,
             "proxy-security-group",
@@ -145,6 +199,9 @@ class GreengrassPrivateNetworkStack(Stack):
         )
         proxy_sg.add_ingress_rule(
             peer, ec2.Port.tcp(8888), "Allow incoming MQTT from other devices"
+        )
+        proxy_sg.add_ingress_rule(
+            peer, ec2.Port.tcp(443), "Allow incoming traffic from VPC endpoints"
         )
 
         ubuntu = ec2.GenericLinuxImage({
