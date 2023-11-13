@@ -6,10 +6,10 @@
 
 #This userdata file is used to set up the TinyProxy
 
-apt install tinyproxy -y
+sudo apt install tinyproxy -y
 
-systemctl start tinyproxy
-systemctl enable tinyproxy
+sudo systemctl start tinyproxy
+sudo systemctl enable tinyproxy
 
 #To configure tinyproxy go to:
 #/etc/tinyproxy

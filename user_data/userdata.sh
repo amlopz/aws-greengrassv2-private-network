@@ -12,9 +12,9 @@
 #instrcutions at the link below:
 #https://docs.aws.amazon.com/greengrass/v2/developerguide/install-greengrass-core-v2.html
 
-yum install pip -y
+sudo yum install pip -y
 
-yum install git -y
+sudo yum install git -y
 
 #aws-greengrass-gdk-cli
 python3 -m pip install -U git+https://github.com/aws-greengrass/aws-greengrass-gdk-cli.git@v1.4.0
