@@ -1,0 +1,31 @@
+greengrass-nucleus-config_example
+
+#this is an example of the config.yaml file that was used when setting up the greengrass device
+#Use this as a reference
+#You will need to modify this file based on what you name your IoT thing, and the roles you create, 
+#as well as the endpoints
+
+---
+system:
+  certificateFilePath: "/greengrass/v2/device.pem.crt"
+  privateKeyPath: "/greengrass/v2/private.pem.key"
+  rootCaPath: "/greengrass/v2/AmazonRootCA1.pem"
+  rootpath: "/greengrass/v2"
+  thingName: "MyGreengrassCore"
+services:
+  aws.greengrass.Nucleus:
+    componentType: "NUCLEUS"
+    version: "2.11.3"
+    configuration:
+      awsRegion: "us-east-1"
+      iotRoleAlias: "GreengrassCoreTokenExchangeRoleAlias"
+      iotCredEndpoint: "ckz3qdnx4e3tr.credentials.iot.us-east-1.amazonaws.com"
+      iotDataEndpoint: "a39u38mhel0l4d-ats.iot.us-east-1.amazonaws.com"
+      greengrassDataPlaneEndpoint: "iotdata"
+      mqtt:
+        port: 443
+      greengrassDataPlanePort: 443
+      networkProxy:
+        noProxyAddresses: ".*.s3.us-east-1.amazonaws.com,greengrass-ats.iot.us-east-1.amazonaws.com,a39u38mhel0l4d-ats.iot.us-east-1.amazonaws.com,data.iot.us-east-1.amazonaws.com,.s3.us-east-1.amazonaws.com"
+        proxy:
+          url: "http://10.0.51.98:8888"
