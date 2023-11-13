@@ -25,7 +25,7 @@ stack = GreengrassPrivateNetworkStack(
     ),
 )
 
-Aspects.of(AwsSolutionsChecks())
+Aspects.of(app).add(AwsSolutionsChecks())
 
 
 app.synth()
