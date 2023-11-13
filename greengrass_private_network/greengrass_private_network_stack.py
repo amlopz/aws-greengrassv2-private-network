@@ -205,7 +205,8 @@ class GreengrassPrivateNetworkStack(Stack):
         )
 
         ubuntu = ec2.GenericLinuxImage({
-            "us-east-1": "ami-053b0d53c279acc90"
+            "us-east-1": "ami-053b0d53c279acc90",
+            "us-east-2": "ami-089c26792dcb1fbd4"
         })
 
         # change userdata
