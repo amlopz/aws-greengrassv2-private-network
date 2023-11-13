@@ -12,6 +12,7 @@ from aws_cdk import (
     aws_route53 as route53,
     aws_route53_targets as targets,
     aws_iam as iam,
+    aws_s3 as s3
 )
 
 
@@ -37,8 +38,7 @@ class GreengrassPrivateNetworkStack(Stack):
 
         gg_vpc.add_flow_log("GreengrassPrivateVpcFlowLog")
 
-        amzn_linux = ec2.MachineImage.latest_amazon_linux2023(
-            #generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2023,
+        amazon_linux = ec2.MachineImage.latest_amazon_linux2023(
             edition=ec2.AmazonLinuxEdition.STANDARD,
             cpu_type=ec2.AmazonLinuxCpuType.X86_64,
         )
@@ -55,15 +55,15 @@ class GreengrassPrivateNetworkStack(Stack):
 
         ec2_role_for_gg.add_managed_policy(
             iam.ManagedPolicy.from_aws_managed_policy_name(
-                "AmazonS3ReadOnlyAccess"
-            )
-        )
-
-        ec2_role_for_gg.add_managed_policy(
-            iam.ManagedPolicy.from_aws_managed_policy_name(
                 "AWSGreengrassReadOnlyAccess"
             )
         )
+
+        bucket = s3.Bucket(self, "greengrass-component-artifacts-{}",
+                           bucket_name="greengrass-component-artifacts-{}".format(self.account),
+                           enforce_ssl=True,
+                           removal_policy=cdk.RemovalPolicy.DESTROY
+                           )
 
         iam.Policy(
             self,
@@ -73,18 +73,15 @@ class GreengrassPrivateNetworkStack(Stack):
             statements=[
                 iam.PolicyStatement(
                     actions=[
-                        "s3:Get*",
-                        "s3:List*",
-                        "s3:Put*"
+                        "s3:GetObject",
+                        "s3:ListObjects",
+                        "s3:PutObject"
                     ],
                     effect=iam.Effect.ALLOW,
                     resources=[
-                        # customer managed bucket for GG to deploy artifacts here ie for components
-                        "arn:aws:s3:::greengrass-component-artifacts-{}".format(
-                            Stack.of(self).account
-                        ),
-                        "arn:aws:s3:::greengrass-component-artifacts-{}/*".format(
-                            Stack.of(self).account
+                        bucket.bucket_arn,
+                        "{}/*".format(
+                            bucket.bucket_arn
                         )
                     ],
                 )
@@ -163,14 +160,15 @@ class GreengrassPrivateNetworkStack(Stack):
         with open("./user_data/userdata.sh") as f:
             USER_DATA = f.read()
 
-        greengrass_instance = ec2.Instance(
+        self.greengrass_instance = ec2.Instance(
             self,
             "Greengrass Instance",
             vpc=gg_vpc,
             instance_type=ec2.InstanceType.of(
                 ec2.InstanceClass.T2, ec2.InstanceSize.SMALL
             ),
-            machine_image=amzn_linux,
+            machine_image=amazon_linux,
+
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
             ),
@@ -178,6 +176,9 @@ class GreengrassPrivateNetworkStack(Stack):
             security_group=greengrass_sg,
             user_data=ec2.UserData.custom(USER_DATA),
             detailed_monitoring=True,
+            block_devices=[ec2.BlockDevice(device_name="/dev/xvda",
+                                           volume=ec2.BlockDeviceVolume.ebs(volume_size=50,
+                                                                            encrypted=True))]
         )
 
         ec2_role_for_proxy = iam.Role(
@@ -206,7 +207,7 @@ class GreengrassPrivateNetworkStack(Stack):
 
         ubuntu = ec2.GenericLinuxImage({
             "us-east-1": "ami-053b0d53c279acc90",
-            "us-east-2": "ami-089c26792dcb1fbd4"
+            "us-east-2": "ami-024e6efaf93d85776"
         })
 
         # change userdata
@@ -214,7 +215,7 @@ class GreengrassPrivateNetworkStack(Stack):
             USER_DATA_PROXY = f.read()
 
         # change instance type from Burstable4, was originally for ARM
-        proxy_instance = ec2.Instance(
+        self.proxy_instance = ec2.Instance(
             self,
             "TinyProxy Instance",
             vpc=gg_vpc,
@@ -229,6 +230,9 @@ class GreengrassPrivateNetworkStack(Stack):
             security_group=proxy_sg,
             user_data=ec2.UserData.custom(USER_DATA_PROXY),
             detailed_monitoring=True,
+            block_devices=[ec2.BlockDevice(device_name="/dev/xvda",
+                                           volume=ec2.BlockDeviceVolume.ebs(volume_size=50,
+                                                                            encrypted=True))]
         )
 
         endpoints_sg = ec2.SecurityGroup(
@@ -417,7 +421,7 @@ class GreengrassPrivateNetworkStack(Stack):
         )
 
         cdk.CfnOutput(
-            self, "Greengrass Ec2 Instance:", value=greengrass_instance.instance_id
+            self, "Greengrass Ec2 Instance:", value=self.greengrass_instance.instance_id
         )
 
         cdk.CfnOutput(self, "Greengrass Vpc CIDR Block:", value=gg_vpc.vpc_cidr_block)
