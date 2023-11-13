@@ -1,0 +1,16 @@
+filter_us-east-1
+
+#allow access to github for testing purposes
+^raw\.githubusercontent\.com$
+
+#allow access to the credential endpoint
+^ckz3qdnx4e3tr\.credentials\.iot.us-east-1\.amazonaws\.com$
+
+#allow access to the non-region specific sts endpoint
+^sts\.amazonaws\.com$
+
+#allow access to the non-region specific s3 endpoints
+^s3\.amazonaws\.com$
+
+#allow access to s3 buckets
+.*\.s3\.amazonaws\.com$

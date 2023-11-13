@@ -117,3 +117,11 @@ You should see several MQTT messages from Greengrass showing your private connec
 You can take this a step further by working through Module 3 parts 1 and 2 [Lambda Functions on AWS IoT Greengrass](https://docs.aws.amazon.com/greengrass/v1/developerguide/module3-I.html).
 
 You are now ready to connect your OT network to your greengrass-private-network VPC. You can also opt to delete your NAT Gateway, Internet Gateway and public subnets, or customize the CDK stack to align with your networking requirements.
+
+***
+Note
+When setting up the proxy server in us-east-1, you will have to add the global s3 domain to the filter list because Greengrass uses the global domain name for S3 - not a region specific one
+
+If you are using another region aside from us-east-1, you will not have to add the global s3 domain to the filter list. Please look under the configuration files folder and look at the filter files to see the difference.
+
+Please note you will need to alter the values specified in the filter files, depending on the region you are deploying in and also change the credential endpoint that is used in your account.

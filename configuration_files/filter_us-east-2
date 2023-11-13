@@ -1,0 +1,10 @@
+filter_us-east-2
+
+#allow access to github for testing purposes
+^raw\.githubusercontent\.com$
+
+#allow access to the credential endpoint
+^xxxxxxxxx\.credentials\.iot.us-east-2\.amazonaws\.com$
+
+#allow access to the non-region specific sts endpoint
+^sts\.amazonaws\.com$
