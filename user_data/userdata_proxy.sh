@@ -9,15 +9,11 @@
 sudo apt-get update
 sudo apt-get install tinyproxy -y
 
-sudo systemctl start tinyproxy
-sudo systemctl enable tinyproxy
-
 #To configure tinyproxy go to:
 #/etc/tinyproxy
 #open tinyproxy.conf
 #You can use the default port or you can change it.
 #We allowed the whole vpc access by using 10.0.0.0/8, but you can change this to fit your needs
-
 
 cat << EOF > /etc/tinyproxy.config
 #
@@ -225,9 +221,9 @@ MaxClients 100
 #
 Allow 127.0.0.1
 Allow ::1
+Allow 10.0.0.0/16   # VPC Range
 #Allow 192.168.0.0/16
 #Allow 172.16.0.0/12
-Allow 10.0.0.0/16
 
 # BasicAuth: HTTP "Basic Authentication" for accessing the proxy.
 # If there are any entries specified, access is only granted for authenticated
@@ -351,3 +347,20 @@ ConnectPort 563
 #
 #ReverseBaseURL "http://localhost:8888/"
 EOF
+
+cat << EOF > /etc/tinyproxy/filter
+# if you use us-east-1, see the file configuration_files/filter_us-east-1 and replace the contents of the filter file
+filter_us-east-2
+
+#allow access to github for testing purposes
+^raw\.githubusercontent\.com$
+
+#allow access to the credential endpoint
+^{{replace_with_actual_value}}\.credentials\.iot.us-east-2\.amazonaws\.com$
+
+#allow access to the non-region specific sts endpoint
+^sts\.amazonaws\.com$
+EOF
+
+sudo systemctl start tinyproxy
+sudo systemctl enable tinyproxy

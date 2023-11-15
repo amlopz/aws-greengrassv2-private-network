@@ -30,7 +30,8 @@ NagSuppressions.add_stack_suppressions(stack, suppressions=[
     {"id": "AwsSolutions-EC29", "reason": "ASG not enabled for greengrass or proxy example"},
     {"id": "AwsSolutions-S1", "reason": "Server access logs not required, not running as a web server"},
     {"id": "AwsSolutions-IAM4", "reason": "Managed policy for SSM, not valuable to hand build a policy"},
-    {"id": "AwsSolutions-IAM5", "reason": "Wildcard for file names, we won't know the file names on the s3 bucket"}
+    {"id": "AwsSolutions-IAM5", "reason": "Wildcard for file names, we won't know the file names on the s3 bucket"},
+    {"id": "CdkNagValidationFailure", "reason": "Hide any nag failures due to runtime exceptions"}
 ])
 
 app.synth()

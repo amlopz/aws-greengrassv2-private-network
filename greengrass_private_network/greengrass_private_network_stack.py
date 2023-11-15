@@ -212,6 +212,7 @@ class GreengrassPrivateNetworkStack(Stack):
 
         # change userdata
         with open("./user_data/userdata_proxy.sh") as f:
+            #ToDo fix the {{replace_with_actual_value}} with actual endpoint value using replace
             USER_DATA_PROXY = f.read()
 
         # change instance type from Burstable4, was originally for ARM
