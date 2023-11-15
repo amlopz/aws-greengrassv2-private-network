@@ -125,3 +125,16 @@ When setting up the proxy server in us-east-1, you will have to add the global s
 If you are using another region aside from us-east-1, you will not have to add the global s3 domain to the filter list. Please look under the configuration files folder and look at the filter files to see the difference.
 
 Please note you will need to alter the values specified in the filter files, depending on the region you are deploying in and also change the credential endpoint that is used in your account.
+
+## License
+
+This project is licensed under the Apache License - see [LICENSE.md](LICENSE.md) file for details.
+
+**[Back to top](#overview)**
+
+## Authors
+
+* **[Kevin Schwarz](https://github.com/kevinschwarz)** 
+* **[Ariana Lopez](https://github.com/amlopz)**
+
+**[Back to top](#overview)**

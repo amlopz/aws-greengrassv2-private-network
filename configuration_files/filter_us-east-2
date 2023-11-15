@@ -1,4 +1,7 @@
-filter_us-east-2
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# filter_us-east-2
 
 #allow access to github for testing purposes
 ^raw\.githubusercontent\.com$

@@ -1,4 +1,6 @@
-greengrass-nucleus-config_example
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+# greengrass-nucleus-config_example
 
 #this is an example of the config.yaml file that was used when setting up the greengrass device
 #Use this as a reference
