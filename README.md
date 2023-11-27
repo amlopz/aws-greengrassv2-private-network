@@ -5,17 +5,17 @@ This is a python 3 based CDK solution that will build out the resources required
 
 ## Overview
 
-This solution creates a multi AZ VPC with public and private subnets. It also configures PrivateLink VPC Endpoints for the AWS services that AWS IoT Greengrass interacts with. In addition an EC2 instance is setup in a private subnet that you can use to test things out before customizing or integrating this solution for your workloads. Before you start be sure to choose a [region](https://docs.aws.amazon.com/general/latest/gr/greengrass.html) that supports AWS IoT Greengrass. 
+This solution creates a multi AZ VPC with public and private subnets. It also configures PrivateLink VPC Endpoints for the AWS services that AWS IoT Greengrass interacts with. In addition, an EC2 instance is setup in a private subnet that you can use to test things out before customizing or integrating this solution for your workloads. Before you start be sure to choose a [region](https://docs.aws.amazon.com/general/latest/gr/greengrass.html) that supports AWS IoT Greengrass. 
 
 ![Architecture Diagram](GreengrassPrivateNetwork.drawio.png)
 
 ## Prerequisites
-Ensure that you have a base understanding of AWS IoT, AWS VPC, AWS EC2 and AWS CDK. You can learn how to install and configure the AWS CDK with this [getting started guide](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) before running this solution. 
+Ensure that you have a base understanding of AWS IoT, AWS VPC, AWS EC2 and AWS CDK. You can learn how to install and configure the AWS CDK with this [getting started guide](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) before running this solution.
 
 ## Instructions
 
 You can install this solution into your environment by first cloning this Git repository, then cd into `aws-greengrass-private-network` directory. 
-Next create a Python3 virtual environment and activate it. 
+Next, create a Python3 virtual environment and activate it. 
  
 ```
 $ python3 -m venv .venv

@@ -3,19 +3,18 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-
 #This userdata file is used to set up the TinyProxy
 
 sudo apt-get update
 sudo apt-get install tinyproxy -y
 
-#To configure tinyproxy go to:
-#/etc/tinyproxy
-#open tinyproxy.conf
-#You can use the default port or you can change it.
-#We allowed the whole vpc access by using 10.0.0.0/8, but you can change this to fit your needs
+# To configure tinyproxy go to: /etc/tinyproxy, open tinyproxy.conf
+# You can use the default port or you can change it.
+# We allowed the whole vpc access by using 10.0.0.0/8, but you can change this to fit your needs
 
-cat << EOF > /etc/tinyproxy.config
+cat << EOF > /etc/conf/tinyproxy.conf
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
 ## tinyproxy.conf -- tinyproxy daemon configuration file
 ##
@@ -349,18 +348,21 @@ ConnectPort 563
 EOF
 
 cat << EOF > /etc/tinyproxy/filter
-# if you use us-east-1, see the file configuration_files/filter_us-east-1 and replace the contents of the filter file
-filter_us-east-2
-
-#allow access to github for testing purposes
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+# allow access to github for testing purposes
 ^raw\.githubusercontent\.com$
 
-#allow access to the credential endpoint
+# allow access to the credential endpoint
 ^{{replace_with_actual_value}}\.credentials\.iot.us-east-2\.amazonaws\.com$
 
 #allow access to the non-region specific sts endpoint
 ^sts\.amazonaws\.com$
 EOF
+
+# create the log file
+sudo touch /etc/tinyproxy/tinyproxy.log
+sudo chmod 777 /etc/tinyproxy/tinyproxy.log
 
 sudo systemctl start tinyproxy
 sudo systemctl enable tinyproxy

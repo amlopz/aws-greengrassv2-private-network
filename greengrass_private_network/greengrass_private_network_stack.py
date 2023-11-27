@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from os import stat
 from constructs import Construct
 import boto3
 import aws_cdk as cdk
@@ -38,11 +37,6 @@ class GreengrassPrivateNetworkStack(Stack):
 
         gg_vpc.add_flow_log("GreengrassPrivateVpcFlowLog")
 
-        amazon_linux = ec2.MachineImage.latest_amazon_linux2023(
-            edition=ec2.AmazonLinuxEdition.STANDARD,
-            cpu_type=ec2.AmazonLinuxCpuType.X86_64,
-        )
-
         ec2_role_for_gg = iam.Role(
             self, "GreengrassPrivateRole", assumed_by=iam.ServicePrincipal("ec2.amazonaws.com")
         )
@@ -59,11 +53,19 @@ class GreengrassPrivateNetworkStack(Stack):
             )
         )
 
+        # Ariana has put/get actions applied to the greengrass role in the video, this solutions uses the role itself
         bucket = s3.Bucket(self, "greengrass-component-artifacts-{}",
                            bucket_name="greengrass-component-artifacts-{}".format(self.account),
                            enforce_ssl=True,
-                           removal_policy=cdk.RemovalPolicy.DESTROY
+                           removal_policy=cdk.RemovalPolicy.DESTROY,
                            )
+        bucket.add_to_resource_policy(iam.PolicyStatement(
+            sid="GreengrassAccess",
+            principals=[ec2_role_for_gg],
+            effect=iam.Effect.ALLOW,
+            actions=["s3:PutObject", "s3:Get*"],
+            resources=[bucket.bucket_arn, bucket.arn_for_objects("*")]
+        ))
 
         iam.Policy(
             self,
@@ -75,14 +77,14 @@ class GreengrassPrivateNetworkStack(Stack):
                     actions=[
                         "s3:GetObject",
                         "s3:ListObjects",
-                        "s3:PutObject"
+                        "s3:PutObject",
+                        "s3:ListAllMyBuckets",
+                        "s3:GetBucketLocation"
                     ],
                     effect=iam.Effect.ALLOW,
                     resources=[
                         bucket.bucket_arn,
-                        "{}/*".format(
-                            bucket.bucket_arn
-                        )
+                        bucket.arn_for_objects("*")
                     ],
                 )
             ],
@@ -157,6 +159,11 @@ class GreengrassPrivateNetworkStack(Stack):
             peer, ec2.Port.tcp(443), "Allow traffic from endpoints"
         )
 
+        amazon_linux = ec2.MachineImage.latest_amazon_linux2023(
+            edition=ec2.AmazonLinuxEdition.STANDARD,
+            cpu_type=ec2.AmazonLinuxCpuType.X86_64,
+        )
+
         with open("./user_data/userdata.sh") as f:
             USER_DATA = f.read()
 
@@ -212,8 +219,13 @@ class GreengrassPrivateNetworkStack(Stack):
 
         # change userdata
         with open("./user_data/userdata_proxy.sh") as f:
-            #ToDo fix the {{replace_with_actual_value}} with actual endpoint value using replace
+
             USER_DATA_PROXY = f.read()
+            # ToDo fix the  with actual endpoint value using replace
+            iot_client = boto3.client("iot", Stack.of(self).region)
+            credentials_endpoint = iot_client.describe_endpoint(endpointType="iot:Data-ATS")
+            credentials_endpoint_address = credentials_endpoint["endpointAddress"]
+            USER_DATA_PROXY.replace("{{replace_with_actual_value}}", credentials_endpoint_address)
 
         # change instance type from Burstable4, was originally for ARM
         self.proxy_instance = ec2.Instance(

@@ -19,15 +19,15 @@ services:
     componentType: "NUCLEUS"
     version: "2.11.3"
     configuration:
-      awsRegion: "us-east-1"
+      awsRegion: "us-east-2"
       iotRoleAlias: "GreengrassCoreTokenExchangeRoleAlias"
-      iotCredEndpoint: "ckz3qdnx4e3tr.credentials.iot.us-east-1.amazonaws.com"
-      iotDataEndpoint: "a39u38mhel0l4d-ats.iot.us-east-1.amazonaws.com"
+      iotCredEndpoint: "a1aqmbdwnc5lrf-ats.iot.us-east-2.amazonaws.com"
+      iotDataEndpoint: "c32c4rzh3uerw8.credentials.iot.us-east-2.amazonaws.com"
       greengrassDataPlaneEndpoint: "iotdata"
       mqtt:
         port: 443
       greengrassDataPlanePort: 443
       networkProxy:
-        noProxyAddresses: ".*.s3.us-east-1.amazonaws.com,greengrass-ats.iot.us-east-1.amazonaws.com,a39u38mhel0l4d-ats.iot.us-east-1.amazonaws.com,data.iot.us-east-1.amazonaws.com,.s3.us-east-1.amazonaws.com"
+        noProxyAddresses: ".*.s3.us-east-2.amazonaws.com,greengrass-ats.iot.us-east-2.amazonaws.com,a1aqmbdwnc5lrf-ats.iot.us-east-2.amazonaws.com,data.iot.us-east-2.amazonaws.com,.s3.us-east-2.amazonaws.com"
         proxy:
-          url: "http://10.0.51.98:8888"
+          url: "http://10.0.39.150:8888"
