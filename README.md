@@ -17,39 +17,39 @@ Ensure that you have a base understanding of AWS IoT, AWS VPC, AWS EC2 and AWS C
 You can install this solution into your environment by first cloning this Git repository, then cd into `aws-greengrass-private-network` directory. 
 Next, create a Python3 virtual environment and activate it. 
  
-```
-$ python3 -m venv .venv
+```bash
+python3 -m venv .venv
 ```
 
 After the init process completes and the virtualenv is created, you can use the following
 step to activate your virtualenv.
 
-```
-$ source .venv/bin/activate
+```bash
+source .venv/bin/activate
 ```
 
 Once the virtualenv is activated, you can install the required dependencies.
 
-```
-$ pip install -r requirements.txt
+```bash
+pip install -r requirements.txt
 ```
 
 In addition this stack requires you to set two environment variables to properly configure VPC details. Make sure you replace the values between the brackets <> with your valid values. Note that the below example is for common linux shells like sh, bash, or zsh.
 
-```
+```bash
 export CDK_DEPLOY_ACCOUNT=<AWS_ACCOUNT>
 export CDK_DEPLOY_REGION=<AWS_REGION>
 ```
 
 You are now ready to bootstrap the CDK in your account if you have not already done so. 
 
-```
+```bash
 cdk bootstrap
 ```
 
 And deploy the greengrass private network stack
 
-``` 
+```bash
 cdk deploy
 ```
 

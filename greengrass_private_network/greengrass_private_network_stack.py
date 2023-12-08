@@ -53,12 +53,13 @@ class GreengrassPrivateNetworkStack(Stack):
             )
         )
 
-        # Ariana has put/get actions applied to the greengrass role in the video, this solutions uses the role itself
         bucket = s3.Bucket(self, "greengrass-component-artifacts-{}",
                            bucket_name="greengrass-component-artifacts-{}".format(self.account),
                            enforce_ssl=True,
                            removal_policy=cdk.RemovalPolicy.DESTROY,
+                           encryption=s3.BucketEncryption.S3_MANAGED
                            )
+
         bucket.add_to_resource_policy(iam.PolicyStatement(
             sid="GreengrassAccess",
             principals=[ec2_role_for_gg],
@@ -136,8 +137,38 @@ class GreengrassPrivateNetworkStack(Stack):
             ],
         )
 
-        # gives you scoping for security groups, pulling the cidr range of vpc
+        # scoping for security groups, pulling the cidr range of vpc
         peer = ec2.Peer.ipv4(gg_vpc.vpc_cidr_block)
+
+        endpoints_sg = ec2.SecurityGroup(
+            self,
+            "endpoints-security-group",
+            vpc=gg_vpc,
+            description="Securing the endpoints used to create private connection with Greengrass",
+            allow_all_outbound=True,
+        )
+
+        cloudwatch_endpoints_sg = ec2.SecurityGroup(
+            self,
+            "cloudwatch-endpoints-security-group",
+            vpc=gg_vpc,
+            description="Securing the endpoints used to create private connection with Greengrass",
+            allow_all_outbound=True,
+        )
+
+        proxy_sg = ec2.SecurityGroup(
+            self,
+            "proxy-security-group",
+            vpc=gg_vpc,
+            description="Securing the the tiny proxy",
+            allow_all_outbound=True,
+        )
+        proxy_sg.add_ingress_rule(
+            peer, ec2.Port.tcp(8888), "Allow incoming MQTT from other devices"
+        )
+        proxy_sg.add_ingress_rule(
+            peer, ec2.Port.tcp(443), "Allow incoming traffic from VPC endpoints"
+        )
 
         greengrass_sg = ec2.SecurityGroup(
             self,
@@ -147,16 +178,16 @@ class GreengrassPrivateNetworkStack(Stack):
             allow_all_outbound=True,
         )
         greengrass_sg.add_ingress_rule(
-            peer, ec2.Port.tcp(8883), "Allow incoming MQTT from other devices"
+            endpoints_sg, ec2.Port.tcp(8883), "Allow incoming MQTT from other devices"
         )
         greengrass_sg.add_ingress_rule(
-            peer, ec2.Port.tcp(8443), "Allow incoming communication from IoT Core"
+            endpoints_sg, ec2.Port.tcp(8443), "Allow incoming communication from IoT Core"
         )
         greengrass_sg.add_ingress_rule(
-            peer, ec2.Port.tcp(8888), "Allow incoming communication from Proxy server"
+            proxy_sg, ec2.Port.tcp(8888), "Allow incoming communication from Proxy server"
         )
         greengrass_sg.add_ingress_rule(
-            peer, ec2.Port.tcp(443), "Allow traffic from endpoints"
+            endpoints_sg, ec2.Port.tcp(443), "Allow traffic from endpoints"
         )
 
         amazon_linux = ec2.MachineImage.latest_amazon_linux2023(
@@ -198,20 +229,6 @@ class GreengrassPrivateNetworkStack(Stack):
             )
         )
 
-        proxy_sg = ec2.SecurityGroup(
-            self,
-            "proxy-security-group",
-            vpc=gg_vpc,
-            description="Securing the the tiny proxy",
-            allow_all_outbound=True,
-        )
-        proxy_sg.add_ingress_rule(
-            peer, ec2.Port.tcp(8888), "Allow incoming MQTT from other devices"
-        )
-        proxy_sg.add_ingress_rule(
-            peer, ec2.Port.tcp(443), "Allow incoming traffic from VPC endpoints"
-        )
-
         ubuntu = ec2.GenericLinuxImage({
             "us-east-1": "ami-053b0d53c279acc90",
             "us-east-2": "ami-024e6efaf93d85776"
@@ -223,9 +240,11 @@ class GreengrassPrivateNetworkStack(Stack):
             USER_DATA_PROXY = f.read()
             # ToDo fix the  with actual endpoint value using replace
             iot_client = boto3.client("iot", Stack.of(self).region)
-            credentials_endpoint = iot_client.describe_endpoint(endpointType="iot:Data-ATS")
+            credentials_endpoint = iot_client.describe_endpoint(endpointType="iot:CredentialProvider")
             credentials_endpoint_address = credentials_endpoint["endpointAddress"]
-            USER_DATA_PROXY.replace("{{replace_with_actual_value}}", credentials_endpoint_address)
+            subdomain = credentials_endpoint_address.split('.')[0]
+            print("subdomain: " + subdomain)
+            USER_DATA_PROXY.replace("{{replace_with_actual_value}}", subdomain)
 
         # change instance type from Burstable4, was originally for ARM
         self.proxy_instance = ec2.Instance(
@@ -246,22 +265,6 @@ class GreengrassPrivateNetworkStack(Stack):
             block_devices=[ec2.BlockDevice(device_name="/dev/xvda",
                                            volume=ec2.BlockDeviceVolume.ebs(volume_size=50,
                                                                             encrypted=True))]
-        )
-
-        endpoints_sg = ec2.SecurityGroup(
-            self,
-            "endpoints-security-group",
-            vpc=gg_vpc,
-            description="Securing the endpoints used to create private connection with Greengrass",
-            allow_all_outbound=True,
-        )
-
-        cloudwatch_endpoints_sg = ec2.SecurityGroup(
-            self,
-            "cloudwatch-endpoints-security-group",
-            vpc=gg_vpc,
-            description="Securing the endpoints used to create private connection with Greengrass",
-            allow_all_outbound=True,
         )
 
         # endpoint services: https://docs.aws.amazon.com/vpc/latest/privatelink/integrated-services-vpce-list.html
